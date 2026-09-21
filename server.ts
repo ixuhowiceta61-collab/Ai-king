@@ -426,3 +426,32 @@ Output ONLY the final detailed English prompt text, nothing else, no markdown, n
 }
 
 startServer();
+// Replicate Face Swap API Endpoint
+app.post("/api/faceswap", async (req, res) => {
+  try {
+    const { sourceImage, targetImage } = req.body;
+
+    if (!sourceImage || !targetImage) {
+      return res.status(400).json({ error: "Source and target image URLs are required." });
+    }
+
+    const response = await fetch("https://api.replicate.com/v1/predictions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        version: "95371c1f7a77e8a936a2824cf96504a3e75e11746f32e921cfd31317d7b1b3b2",
+        input: {
+          swap_image: sourceImage,
+          target_image: targetImage,
+        },
+      }),
+    });
+
+    const result = await response.json();
+    return res.json(result);
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
