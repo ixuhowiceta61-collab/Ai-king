@@ -404,6 +404,36 @@ Output ONLY the final detailed English prompt text, nothing else, no markdown, n
       });
     }
   });
+  // Replicate Face Swap API Endpoint
+  app.post("/api/faceswap", async (req, res) => {
+    try {
+      const { sourceImage, targetImage } = req.body;
+
+      if (!sourceImage || !targetImage) {
+        return res.status(400).json({ error: "Source and target image URLs are required." });
+      }
+
+      const response = await fetch("https://api.replicate.com/v1/predictions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          version: "95071c17a27e5a126a2121c90501a5e75e117467329521c7d1217d7b1b62",
+          input: {
+            swap_image: sourceImage,
+            target_image: targetImage,
+          },
+        }),
+      });
+
+      const result = await response.json();
+      return res.json(result);
+    } catch (error: any) {
+      return res.status(500).json({ error: error.message });
+    }
+  });
 
   // Vite middleware in dev or static files in prod
   if (process.env.NODE_ENV !== "production") {
@@ -415,43 +445,15 @@ Output ONLY the final detailed English prompt text, nothing else, no markdown, n
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*", (_req, res) => {
+    app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
 
+  const PORT = process.env.PORT || 3000;
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
 }
 
 startServer();
-// Replicate Face Swap API Endpoint
-app.post("/api/faceswap", async (req, res) => {
-  try {
-    const { sourceImage, targetImage } = req.body;
-
-    if (!sourceImage || !targetImage) {
-      return res.status(400).json({ error: "Source and target image URLs are required." });
-    }
-
-    const response = await fetch("https://api.replicate.com/v1/predictions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.REPLICATE_API_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        version: "95371c1f7a77e8a936a2824cf96504a3e75e11746f32e921cfd31317d7b1b3b2",
-        input: {
-          swap_image: sourceImage,
-          target_image: targetImage,
-        },
-      }),
-    });
-
-    const result = await response.json();
-    return res.json(result);
-  } catch (error: any) {
-    return res.status(500).json({ error: error.message });
-  }
